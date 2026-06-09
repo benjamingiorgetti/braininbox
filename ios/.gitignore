@@ -32,3 +32,7 @@ Runner/GeneratedPluginRegistrant.*
 !default.mode2v3
 !default.pbxuser
 !default.perspectivev3
+# Xcode Cloud needs this generated package to resolve dependencies
+!Flutter/ephemeral/
+!Flutter/ephemeral/Packages/
+!Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/
