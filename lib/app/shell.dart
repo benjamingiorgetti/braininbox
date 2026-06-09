@@ -7,6 +7,8 @@ import '../features/capture/text_capture_sheet.dart';
 import '../features/inbox/inbox_screen.dart';
 import '../features/calendar/calendar_screen.dart';
 import '../features/profile/profile_screen.dart';
+import '../data/models/inbox_filter.dart';
+import '../data/repositories/inbox_repository.dart';
 import 'router.dart';
 import 'theme.dart';
 
@@ -33,6 +35,7 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final index = ref.watch(shellTabProvider);
+    final repo = ref.watch(inboxRepositoryProvider);
 
     void onRecord() => Navigator.pushNamed(context, AppRoutes.recording);
 
@@ -53,26 +56,38 @@ class AppShell extends ConsumerWidget {
       );
     }
 
-    return Scaffold(
-      body: IndexedStack(index: index, children: _tabs),
-      bottomNavigationBar: _BottomNav(
-        index: index,
-        onTap: (i) => ref.read(shellTabProvider.notifier).switchTo(i),
-        onRecord: onRecord,
-        onRecordLongPress: onFabLongPress,
-      ),
+    return StreamBuilder<int>(
+      stream: repo
+          .watchInbox(InboxFilter.noDate)
+          .map((items) => items.length),
+      initialData: 0,
+      builder: (ctx, snap) {
+        final reviewCount = snap.data ?? 0;
+        return Scaffold(
+          body: IndexedStack(index: index, children: _tabs),
+          bottomNavigationBar: _BottomNav(
+            index: index,
+            reviewCount: reviewCount,
+            onTap: (i) => ref.read(shellTabProvider.notifier).switchTo(i),
+            onRecord: onRecord,
+            onRecordLongPress: onFabLongPress,
+          ),
+        );
+      },
     );
   }
 }
 
 class _BottomNav extends StatelessWidget {
   final int index;
+  final int reviewCount;
   final ValueChanged<int> onTap;
   final VoidCallback onRecord;
   final VoidCallback onRecordLongPress;
 
   const _BottomNav({
     required this.index,
+    required this.reviewCount,
     required this.onTap,
     required this.onRecord,
     required this.onRecordLongPress,
@@ -109,6 +124,7 @@ class _BottomNav extends StatelessWidget {
                 activeIcon: Icons.checklist_rounded,
                 label: 'Inbox',
                 selected: index == 1,
+                badgeCount: reviewCount,
                 onTap: () => onTap(1),
               ),
               // Center mic FAB — tap to record, long press for voice/text choice
@@ -164,6 +180,7 @@ class _NavItem extends StatelessWidget {
   final IconData activeIcon;
   final String label;
   final bool selected;
+  final int badgeCount;
   final VoidCallback onTap;
 
   const _NavItem({
@@ -172,6 +189,7 @@ class _NavItem extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.badgeCount = 0,
   });
 
   @override
@@ -184,10 +202,45 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              selected ? activeIcon : icon,
-              color: selected ? kPrimary : kTextSecondary,
-              size: 24,
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  selected ? activeIcon : icon,
+                  color: selected ? kPrimary : kTextSecondary,
+                  size: 24,
+                ),
+                if (badgeCount > 0 && !selected)
+                  Positioned(
+                    right: -4,
+                    top: -3,
+                    child: badgeCount >= 4
+                        ? Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 4, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: kPrimary,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '$badgeCount',
+                              style: const TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          )
+                        : Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: kPrimary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                  ),
+              ],
             ),
             const SizedBox(height: 2),
             Text(

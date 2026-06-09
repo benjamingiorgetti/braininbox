@@ -69,7 +69,7 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
               ),
             ),
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
               sliver: SliverToBoxAdapter(
                 child: HeroCaptureCard(repo: repo),
               ),
@@ -77,7 +77,7 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
               sliver: SliverToBoxAdapter(
-                child: _NeedsAttentionSection(repo: repo),
+                child: _OpenLoopsSection(repo: repo),
               ),
             ),
             SliverPadding(
@@ -87,7 +87,7 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
               ),
             ),
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+              padding: const EdgeInsets.fromLTRB(24, 14, 24, 28),
               sliver: SliverToBoxAdapter(
                 child: _MomentumCard(repo: repo, analyticsRepo: analyticsRepo),
               ),
@@ -163,13 +163,13 @@ class _HomeHeader extends StatelessWidget {
 // Hero capture card
 // ---------------------------------------------------------------------------
 
-class HeroCaptureCard extends StatelessWidget {
+class HeroCaptureCard extends ConsumerWidget {
   final InboxRepository repo;
 
   const HeroCaptureCard({super.key, required this.repo});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -186,7 +186,7 @@ class HeroCaptureCard extends StatelessWidget {
           ),
         ],
       ),
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -209,23 +209,29 @@ class HeroCaptureCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          StreamBuilder<int>(
-            stream: repo.watchPendingCount(),
+          StreamBuilder<List<ItemRow>>(
+            stream: repo.watchInbox(InboxFilter.noDate),
             builder: (ctx, snap) {
-              final pending = snap.data ?? 0;
-              return Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(40),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '$pending open loops',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
+              final pending = (snap.data ?? []).length;
+              return GestureDetector(
+                onTap: () =>
+                    ref.read(shellTabProvider.notifier).switchTo(1),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(40),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    pending == 0
+                        ? 'Inbox clear'
+                        : '$pending open loop${pending == 1 ? '' : 's'}',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               );
@@ -495,153 +501,132 @@ class _MomentumCard extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Needs attention section  (decision inbox — primary action on home)
+// Open loops section — compact preview, max 2 items
 // ---------------------------------------------------------------------------
 
-class _NeedsAttentionSection extends ConsumerWidget {
+class _OpenLoopsSection extends ConsumerWidget {
   final InboxRepository repo;
 
-  const _NeedsAttentionSection({required this.repo});
+  const _OpenLoopsSection({required this.repo});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return StreamBuilder<List<ItemRow>>(
-      stream: repo.watchInbox(InboxFilter.needsReview),
+      stream: repo.watchInbox(InboxFilter.noDate),
       builder: (ctx, snap) {
         final items = snap.data ?? [];
+        if (items.isEmpty) return const SizedBox.shrink();
 
-        if (items.isEmpty) {
-          return Row(
-            children: [
-              const Icon(Icons.check_circle_outline_rounded,
-                  size: 16, color: kSuccess),
-              const SizedBox(width: 8),
-              Text(
-                'All clear — no items need review',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: kTextSecondary,
-                ),
-              ),
-            ],
-          );
-        }
+        final preview = items.take(2).toList();
 
-        final types = items.map((i) => i.type).toSet();
-
-        return Container(
-          decoration: BoxDecoration(
-            color: kCard,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFEDE9FE), width: 1.5),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF7C3AED).withAlpha(18),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(7),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEDE9FE),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.inbox_rounded,
-                        size: 16, color: Color(0xFF7C3AED)),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Section header
+            Row(
+              children: [
+                Text(
+                  'Open loops',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: kTextPrimary,
                   ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'Needs your attention',
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${items.length} captured',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: kTextSecondary,
+                  ),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () =>
+                      ref.read(shellTabProvider.notifier).switchTo(1),
+                  child: Text(
+                    'View inbox →',
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: kTextPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: kPrimary,
                     ),
                   ),
-                  const Spacer(),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEDE9FE),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'Needs decision',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF7C3AED),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                '${items.length} item${items.length == 1 ? '' : 's'} from your captures',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: kTextSecondary,
                 ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            // Preview rows
+            Container(
+              decoration: BoxDecoration(
+                color: kCard,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: kDivider),
               ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 6,
-                children: [
-                  if (types.contains(ItemType.action))
-                    const _TypePill(
-                        label: 'Task',
-                        color: kPrimary,
-                        icon: Icons.check_rounded),
-                  if (types.contains(ItemType.idea))
-                    const _TypePill(
-                        label: 'Idea',
-                        color: Color(0xFF8B5CF6),
-                        icon: Icons.lightbulb_outline_rounded),
-                ],
-              ),
-              const SizedBox(height: 14),
-              GestureDetector(
-                onTap: () =>
-                    ref.read(shellTabProvider.notifier).switchTo(1),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF7C3AED),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+              child: Column(
+                children: preview.asMap().entries.map((entry) {
+                  final i = entry.key;
+                  final item = entry.value;
+                  final chipLabel = item.needsReview
+                      ? 'Needs time'
+                      : item.type == ItemType.idea
+                          ? 'Idea'
+                          : 'Task';
+                  final chipColor = item.needsReview
+                      ? kWarning
+                      : item.type == ItemType.idea
+                          ? const Color(0xFF8B5CF6)
+                          : kPrimary;
+
+                  return Column(
                     children: [
-                      Text(
-                        'Review now',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 11),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                item.title,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: kTextPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: chipColor.withAlpha(20),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                chipLabel,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: chipColor,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 6),
-                      const Icon(Icons.arrow_forward_rounded,
-                          size: 15, color: Colors.white),
+                      if (i < preview.length - 1)
+                        const Divider(height: 1, color: kDivider),
                     ],
-                  ),
-                ),
+                  );
+                }).toList(),
               ),
-            ],
-          ),
+            ),
+          ],
         );
       },
     );
@@ -793,44 +778,4 @@ class _TodayCompactRow extends StatelessWidget {
 }
 
 
-// ---------------------------------------------------------------------------
-// Shared small widgets
-// ---------------------------------------------------------------------------
-
-class _TypePill extends StatelessWidget {
-  final String label;
-  final Color? color;
-  final IconData? icon;
-
-  const _TypePill({required this.label, this.color, this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    final pillColor = color ?? kPrimaryDark;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: pillColor.withAlpha(20),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 10, color: pillColor),
-            const SizedBox(width: 3),
-          ],
-          Text(
-            label,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: pillColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 

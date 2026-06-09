@@ -198,11 +198,26 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             };
 
             final sel = _selectedDay;
+
+            // Normalised GCal titles for the selected day (used for dedup).
+            final gcalTitlesForDay = _gcalEvents
+                .where((e) =>
+                    DateTime(e.start.year, e.start.month, e.start.day) == sel)
+                .map((e) => e.title.toLowerCase().trim())
+                .toSet();
+
             final dayDbItems = allItems.where((item) {
               if (item.scheduledAt == null) return false;
+              // Skip items with no confirmed time — they belong in Inbox, not calendar.
+              if (item.needsReview) return false;
               final d = DateTime(item.scheduledAt!.year,
                   item.scheduledAt!.month, item.scheduledAt!.day);
-              return d == sel;
+              if (d != sel) return false;
+              // Dedup: hide DB item if a GCal event with the same title exists today.
+              if (gcalTitlesForDay.contains(item.title.toLowerCase().trim())) {
+                return false;
+              }
+              return true;
             }).toList()
               ..sort((a, b) => a.scheduledAt!.compareTo(b.scheduledAt!));
 
@@ -216,27 +231,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 i.scheduledAt != null &&
                 (i.scheduledAt!.hour != 0 || i.scheduledAt!.minute != 0);
 
-            final List<ItemRow> visibleDbItems = switch (_filter) {
-              ScheduleFilter.all => dayDbItems,
-              ScheduleFilter.tasks =>
-                dayDbItems.where((i) => !hasTime(i)).toList(),
-              ScheduleFilter.reminders => dayDbItems.where(hasTime).toList(),
-              ScheduleFilter.events => [],
-            };
-            final showGcal = _filter == ScheduleFilter.all ||
-                _filter == ScheduleFilter.events;
-            final visibleGcalItems =
-                showGcal ? dayGcalEvents : <CalendarEvent>[];
+            final List<ItemRow> visibleDbItems = dayDbItems;
+            final visibleGcalItems = dayGcalEvents;
 
             final visibleTimedItems = visibleDbItems.where(hasTime).toList();
             final visibleAllDayItems =
                 visibleDbItems.where((i) => !hasTime(i)).toList();
-
-            final isEmpty = visibleTimedItems.isEmpty &&
-                visibleAllDayItems.isEmpty &&
-                visibleGcalItems.isEmpty;
-            final hasTimedContent = visibleTimedItems.isNotEmpty ||
-                visibleGcalItems.any((e) => !e.isAllDay);
 
             final subLabel = _viewMode == CalendarViewMode.week
                 ? _monthLabel(sel)
@@ -244,7 +244,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
             return Column(
               children: [
-                // ── Row 1: title + Today + Week/Month toggle ──────────────
+                // ── Row 1: title + Week/Month toggle ─────────────────────
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                   child: Row(
@@ -258,27 +258,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         ),
                       ),
                       const Spacer(),
-                      if (_selectedDay != _today) ...[
-                        _TodayButton(
-                          onTap: () {
-                            if (_viewMode == CalendarViewMode.week) {
-                              setState(() => _selectedDay = _today);
-                              _weekPageCtrl.animateToPage(
-                                _kBasePage,
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeOut,
-                              );
-                            } else {
-                              setState(() {
-                                _selectedDay = _today;
-                                _focusedMonth =
-                                    DateTime(_today.year, _today.month);
-                              });
-                            }
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                      ],
                       WeekMonthToggle(
                         selected: _viewMode,
                         onSelect: (mode) {
@@ -300,9 +279,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                // ── Row 2: month label + prev/next chevrons ───────────────
+                // ── Row 2: prev/next chevrons + month label + Today link ──
                 _SubheaderNavRow(
                   label: subLabel,
+                  showToday: _selectedDay != _today,
                   onPrev: _viewMode == CalendarViewMode.week
                       ? () => _weekPageCtrl.animateToPage(
                             _currentWeekPage - 1,
@@ -327,6 +307,22 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           setState(() => _focusedMonth = m);
                           _fetchGcalEvents(m);
                         },
+                  onToday: () {
+                    if (_viewMode == CalendarViewMode.week) {
+                      setState(() => _selectedDay = _today);
+                      _weekPageCtrl.animateToPage(
+                        _kBasePage,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOut,
+                      );
+                    } else {
+                      setState(() {
+                        _selectedDay = _today;
+                        _focusedMonth =
+                            DateTime(_today.year, _today.month);
+                      });
+                    }
+                  },
                 ),
                 // ── GCal connect prompt ───────────────────────────────────
                 if (_gcalSignedIn == false)
@@ -359,13 +355,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     onPageChanged: (page) =>
                         setState(() => _currentWeekPage = page),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                    child: ScheduleFilterTabs(
-                      selected: _filter,
-                      onSelect: (f) => setState(() => _filter = f),
-                    ),
-                  ),
                   _DayHeader(
                     selectedDay: sel,
                     today: _today,
@@ -373,42 +362,19 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         visibleAllDayItems.length +
                         visibleGcalItems.length,
                   ),
-                  if (hasTimedContent)
-                    Expanded(
-                      child: _DayTimeline(
-                        key: ValueKey(sel),
-                        selectedDay: sel,
-                        today: _today,
-                        timedItems: visibleTimedItems,
-                        allDayItems: visibleAllDayItems,
-                        gcalEvents: visibleGcalItems,
-                        onItemTap: (item) =>
-                            _showEventDetail(context, item: item),
-                        onGcalTap: (_) {},
-                      ),
-                    )
-                  else if (!isEmpty)
-                    Expanded(
-                      child: Align(
-                        alignment: Alignment.topCenter,
-                        child: _AllDayOnlyContent(
-                          items: visibleAllDayItems,
-                          gcalEvents: visibleGcalItems,
-                          onItemTap: (item) =>
-                              _showEventDetail(context, item: item),
-                        ),
-                      ),
-                    )
-                  else
-                    const Expanded(
-                      child: Align(
-                        alignment: Alignment.topCenter,
-                        child: Padding(
-                          padding: EdgeInsets.fromLTRB(20, 8, 20, 0),
-                          child: _CompactEmptyState(),
-                        ),
-                      ),
+                  Expanded(
+                    child: _DayTimeline(
+                      key: ValueKey(sel),
+                      selectedDay: sel,
+                      today: _today,
+                      timedItems: visibleTimedItems,
+                      allDayItems: visibleAllDayItems,
+                      gcalEvents: visibleGcalItems,
+                      onItemTap: (item) =>
+                          _showEventDetail(context, item: item),
+                      onGcalTap: (_) {},
                     ),
+                  ),
                 ]
                 // ── Month grid + filters + agenda (month only) ────────────
                 else
@@ -470,50 +436,74 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
 class _SubheaderNavRow extends StatelessWidget {
   final String label;
+  final bool showToday;
   final VoidCallback onPrev;
   final VoidCallback onNext;
+  final VoidCallback onToday;
 
   const _SubheaderNavRow({
     required this.label,
     required this.onPrev,
     required this.onNext,
+    required this.onToday,
+    this.showToday = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 36,
-      child: Center(
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.chevron_left_rounded,
-                  color: kTextSecondary, size: 20),
-              onPressed: onPrev,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left_rounded,
+                color: kTextSecondary, size: 20),
+            onPressed: onPrev,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: kTextPrimary,
+              ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                label,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: kTextPrimary,
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_right_rounded,
+                color: kTextSecondary, size: 20),
+            onPressed: onNext,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          ),
+          if (showToday) ...[
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: onToday,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: kPrimary.withAlpha(18),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'Today',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: kPrimary,
+                  ),
                 ),
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.chevron_right_rounded,
-                  color: kTextSecondary, size: 20),
-              onPressed: onNext,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -589,38 +579,6 @@ class _DayHeader extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Today button — visible only when selected day ≠ today
-// ---------------------------------------------------------------------------
-
-class _TodayButton extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _TodayButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          border: Border.all(color: kPrimary),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          'Today',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: kPrimary,
-          ),
-        ),
       ),
     );
   }
@@ -1373,42 +1331,6 @@ class _AllDayChip extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// All-day-only content — shown in week view when there are no timed items
-// ---------------------------------------------------------------------------
-
-class _AllDayOnlyContent extends StatelessWidget {
-  final List<ItemRow> items;
-  final List<CalendarEvent> gcalEvents;
-  final void Function(ItemRow) onItemTap;
-
-  const _AllDayOnlyContent({
-    required this.items,
-    required this.gcalEvents,
-    required this.onItemTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final allDayGcal = gcalEvents.where((e) => e.isAllDay).toList();
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ...allDayGcal.map((e) => _MonthGcalRow(event: e)),
-          ...items.map(
-            (item) => _MonthAgendaRow(
-              item: item,
-              onTap: () => onItemTap(item),
-            ),
-          ),
-        ],
       ),
     );
   }
