@@ -1,0 +1,22 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  exclude:
+    - '**/*.g.dart'
+    - '**/*.drift.dart'
+  errors:
+    missing_required_param: error
+    missing_return: error
+
+linter:
+  rules:
+    avoid_dynamic_calls: true
+    avoid_print: true
+    prefer_const_constructors: true
+    prefer_final_fields: true
+    prefer_const_declarations: true
+    unnecessary_nullable_for_final_variable_declarations: true

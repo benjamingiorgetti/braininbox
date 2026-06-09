@@ -1,0 +1,63 @@
+name: braininbox
+description: "Speak messy. Get clear actions. — v0.1 validation build."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # State management
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.4.1
+  # Local DB
+  drift: ^2.21.0
+  drift_flutter: ^0.2.4
+  # Audio
+  record: ^7.0.0
+  just_audio: ^0.9.43
+  # AI / HTTP
+  dio: ^5.7.0
+  # Utilities
+  uuid: ^4.5.1
+  path_provider: ^2.1.5
+  flutter_timezone: ^1.0.4
+  shared_preferences: ^2.3.0
+  google_fonts: ^6.2.1
+  # Triggers (CLAUDE.md §8)
+  home_widget: ^0.7.0
+  receive_sharing_intent: ^1.8.1
+  # Google Calendar integration
+  google_sign_in: ^6.2.2
+  googleapis: ^13.2.0
+  http: ^1.2.2
+  # Local notifications
+  flutter_local_notifications: ^17.0.0
+  timezone: ^0.9.4
+  purchases_flutter: ^10.2.2
+  purchases_ui_flutter: ^10.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  build_runner: ^2.4.13
+  drift_dev: ^2.21.0
+  riverpod_generator: ^2.4.3
+  mocktail: ^1.0.4
+  flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/app_icon.png"
+  min_sdk_android: 21
+  web:
+    generate: false
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icon/
