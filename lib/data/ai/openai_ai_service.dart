@@ -15,6 +15,10 @@ part 'openai_ai_service.g.dart';
 
 @riverpod
 AiService aiService(Ref ref) {
+  assert(
+    AppConfig.openaiApiKey.isNotEmpty,
+    'OPENAI_API_KEY is not set. Pass it via --dart-define=OPENAI_API_KEY=...',
+  );
   final dio = Dio(BaseOptions(
     baseUrl: 'https://api.openai.com/v1',
     headers: {'Authorization': 'Bearer ${AppConfig.openaiApiKey}'},
@@ -168,7 +172,7 @@ class OpenAiAiService implements AiService {
           'properties': {
             'type': {
               'type': 'string',
-              'enum': ['action', 'idea', 'goal'],
+              'enum': ['action', 'idea'],
             },
             'title': {'type': 'string'},
             'note': {

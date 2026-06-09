@@ -1,13 +1,17 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:record/record.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/router.dart';
 import '../../app/theme.dart';
 import '../../core/config.dart';
 import '../../data/repositories/analytics_repository.dart';
+import '../../data/repositories/capture_repository.dart';
 import '../../data/repositories/inbox_repository.dart';
 import '../../data/services/google_calendar_service.dart';
 import '../../data/services/revenuecat_service.dart';
@@ -96,6 +100,59 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     await prefs.clear();
     if (!mounted) return;
     Navigator.pushReplacementNamed(context, AppRoutes.welcome);
+  }
+
+  Future<void> _deleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete all data?'),
+        content: const Text(
+          'This will permanently delete all your captures, items, and settings. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: kError),
+            child: const Text('Delete everything'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final db = ref.read(appDatabaseProvider);
+    final notes = await db.select(db.voiceNotes).get();
+    for (final note in notes) {
+      if (note.audioPath != null) {
+        final file = File(note.audioPath!);
+        if (await file.exists()) await file.delete();
+      }
+    }
+    await db.delete(db.voiceNotes).go();
+    await db.delete(db.items).go();
+    await db.delete(db.appEvents).go();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, AppRoutes.welcome);
+  }
+
+  Future<void> _openPrivacyPolicy() async {
+    final uri = Uri.parse('https://braininbox.app/privacy');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> _openSupport() async {
+    final uri = Uri.parse('mailto:support@braininbox.app?subject=Brain%20Inbox%20Support');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
   }
 
   Future<void> _toggleGcal() async {
@@ -213,8 +270,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget build(BuildContext context) {
     final analyticsRepo = ref.watch(analyticsRepositoryProvider);
     final inboxRepo = ref.watch(inboxRepositoryProvider);
-    final initial = _name.isNotEmpty ? _name[0].toUpperCase() : 'B';
-    final displayName = _name.isEmpty ? 'Benjamin' : _name;
+    final initial = _name.isNotEmpty ? _name[0].toUpperCase() : 'U';
+    final displayName = _name.isEmpty ? 'User' : _name;
 
     return Scaffold(
       backgroundColor: kBackground,
@@ -295,6 +352,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               _AccountCard(
                 onEditProfile: _editProfile,
                 onSignOut: _signOut,
+                onDeleteAccount: _deleteAccount,
+                onPrivacyPolicy: _openPrivacyPolicy,
+                onSupport: _openSupport,
               ),
             ],
           ),
@@ -751,10 +811,16 @@ class _PermissionRow extends StatelessWidget {
 class _AccountCard extends StatelessWidget {
   final VoidCallback onEditProfile;
   final VoidCallback onSignOut;
+  final VoidCallback onDeleteAccount;
+  final VoidCallback onPrivacyPolicy;
+  final VoidCallback onSupport;
 
   const _AccountCard({
     required this.onEditProfile,
     required this.onSignOut,
+    required this.onDeleteAccount,
+    required this.onPrivacyPolicy,
+    required this.onSupport,
   });
 
   @override
@@ -772,19 +838,26 @@ class _AccountCard extends StatelessWidget {
           _MenuRow(
             icon: Icons.privacy_tip_outlined,
             label: 'Privacy Policy',
-            onTap: () {},
+            onTap: onPrivacyPolicy,
           ),
           const Divider(height: 1, color: kDivider),
           _MenuRow(
             icon: Icons.help_outline_rounded,
             label: 'Support',
-            onTap: () {},
+            onTap: onSupport,
           ),
           const Divider(height: 1, color: kDivider),
           _MenuRow(
             icon: Icons.logout_rounded,
             label: 'Sign Out',
             onTap: onSignOut,
+            destructive: true,
+          ),
+          const Divider(height: 1, color: kDivider),
+          _MenuRow(
+            icon: Icons.delete_forever_rounded,
+            label: 'Delete All Data',
+            onTap: onDeleteAccount,
             destructive: true,
           ),
         ],

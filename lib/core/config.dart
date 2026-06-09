@@ -14,10 +14,7 @@ abstract final class AppConfig {
   static const googleClientId =
       String.fromEnvironment('GOOGLE_CLIENT_ID', defaultValue: '');
 
-  static const revenueCatApiKey = String.fromEnvironment(
-    'REVENUECAT_API_KEY',
-    defaultValue: 'test_OiAhQQEVYHKoJQoNrnYEahzdINF',
-  );
+  static const revenueCatApiKey = String.fromEnvironment('REVENUECAT_API_KEY');
 
   static const revenueCatEntitlementId = String.fromEnvironment(
     'REVENUECAT_ENTITLEMENT_ID',

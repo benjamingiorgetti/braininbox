@@ -330,6 +330,15 @@ class _HeroPage extends StatelessWidget {
             color: kTextSecondary,
           ),
         ),
+        const SizedBox(height: 12),
+        Text(
+          'Your recordings are transcribed using OpenAI\'s API. Audio is not stored on our servers.',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 13,
+            height: 1.4,
+            color: kTextSecondary.withValues(alpha: 0.65),
+          ),
+        ),
         const SizedBox(height: 36),
         const _SpeechCard(
           text:
@@ -685,7 +694,7 @@ class _PaywallStep extends StatelessWidget {
           ),
           TextButton(
             onPressed: busy ? null : onContinueLimited,
-            child: const Text('Continue with limited access'),
+            child: const Text('Continue free (5 captures/month)'),
           ),
         ],
       ),
@@ -738,7 +747,7 @@ class _ExitOfferPage extends StatelessWidget {
         _ActionPanel(
           icon: Icons.inbox_rounded,
           title: 'Continue free for now',
-          subtitle: 'Start with limited access and upgrade later.',
+          subtitle: 'Free plan: up to 5 captures/month. Upgrade anytime.',
           onTap: busy ? null : onFinish,
         ),
       ],

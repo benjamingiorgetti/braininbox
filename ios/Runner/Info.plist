@@ -61,7 +61,7 @@
 		</dict>
 	</array>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Brain Inbox needs the microphone to record your voice notes.</string>
+	<string>Brain Inbox uses your microphone to record voice notes that are transcribed and organized into actions using OpenAI's API.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
