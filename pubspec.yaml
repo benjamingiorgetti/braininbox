@@ -27,7 +27,6 @@ dependencies:
   shared_preferences: ^2.3.0
   google_fonts: ^6.2.1
   # Triggers (CLAUDE.md §8)
-  home_widget: ^0.7.0
   receive_sharing_intent: ^1.8.1
   # Google Calendar integration
   google_sign_in: ^6.2.2
