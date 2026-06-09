@@ -20,8 +20,8 @@ export function middleware(request: NextRequest) {
 
   if (hasLocale) return NextResponse.next();
 
-  // Redirect bare paths like /privacy, /terms to /en/privacy, /en/terms
-  return NextResponse.redirect(new URL(`/${defaultLocale}${pathname}`, request.url));
+  // Default locale: serve as-is
+  return NextResponse.next();
 }
 
 export const config = {
