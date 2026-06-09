@@ -1,22 +1,34 @@
 #!/bin/sh
 set -e
 
-# Install Flutter
+echo "=== Brain Inbox: Xcode Cloud post-clone setup ==="
+
+# Xcode Cloud sets HOME to /Users/local
 export HOME=/Users/local
 export PUB_CACHE="${HOME}/.pub-cache"
 
-FLUTTER_VERSION="3.44.1"
 FLUTTER_DIR="${HOME}/flutter"
 
-if [ ! -d "$FLUTTER_DIR" ]; then
-  curl -fsSL "https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_arm64_${FLUTTER_VERSION}-stable.tar.xz" \
-    -o /tmp/flutter.tar.xz
-  tar xf /tmp/flutter.tar.xz -C "${HOME}"
+# Install Flutter via git clone (stable channel)
+if [ ! -d "${FLUTTER_DIR}" ]; then
+  echo "Cloning Flutter stable..."
+  git clone --depth 1 --branch stable \
+    https://github.com/flutter/flutter.git "${FLUTTER_DIR}"
+else
+  echo "Flutter already present, skipping clone."
 fi
 
 export PATH="${FLUTTER_DIR}/bin:${PATH}"
 
-# Run from the repo root (ci_post_clone.sh runs inside ios/ci_scripts)
+echo "Flutter version: $(flutter --version --machine 2>/dev/null | head -1 || echo unknown)"
+
+# Move to project root
 cd "${CI_PRIMARY_REPOSITORY_PATH}"
 
+echo "Running flutter pub get..."
 flutter pub get
+
+echo "Generating iOS project config (creates FlutterGeneratedPluginSwiftPackage)..."
+flutter build ios --config-only --no-codesign
+
+echo "=== Setup complete ==="
