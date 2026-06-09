@@ -75,21 +75,21 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
               ),
             ),
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+              sliver: SliverToBoxAdapter(
+                child: _NeedsAttentionSection(repo: repo),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+              sliver: SliverToBoxAdapter(
+                child: _TodayCompactSection(repo: repo),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
               sliver: SliverToBoxAdapter(
                 child: _MomentumCard(repo: repo, analyticsRepo: analyticsRepo),
-              ),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-              sliver: SliverToBoxAdapter(
-                child: _TodaySection(repo: repo),
-              ),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-              sliver: SliverToBoxAdapter(
-                child: _NeedsReviewSection(repo: repo),
               ),
             ),
           ],
@@ -495,90 +495,153 @@ class _MomentumCard extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Today section
+// Needs attention section  (decision inbox — primary action on home)
 // ---------------------------------------------------------------------------
 
-class _TodaySection extends ConsumerWidget {
+class _NeedsAttentionSection extends ConsumerWidget {
   final InboxRepository repo;
 
-  const _TodaySection({required this.repo});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return StreamBuilder<List<ItemRow>>(
-      stream: repo.watchInbox(InboxFilter.today),
-      builder: (ctx, snap) {
-        // Exclude items that still need review — they belong in the section below.
-        final items = (snap.data ?? [])
-            .where((item) => !item.needsReview)
-            .take(3)
-            .toList();
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SectionHeader(
-              title: 'Today',
-              subtitle: 'Scheduled from your voice notes',
-              actionLabel: 'View schedule →',
-              onAction: () =>
-                  ref.read(shellTabProvider.notifier).switchTo(2),
-            ),
-            const SizedBox(height: 12),
-            if (items.isEmpty)
-              _emptyStateCard(
-                'Nothing planned today',
-                'Say: "Tomorrow at 10, remind me to send the invoice."',
-              )
-            else
-              ...items.map(
-                (item) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: TodayPreviewCard(item: item),
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Needs review section
-// ---------------------------------------------------------------------------
-
-class _NeedsReviewSection extends ConsumerWidget {
-  final InboxRepository repo;
-
-  const _NeedsReviewSection({required this.repo});
+  const _NeedsAttentionSection({required this.repo});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return StreamBuilder<List<ItemRow>>(
       stream: repo.watchInbox(InboxFilter.needsReview),
       builder: (ctx, snap) {
-        final items = (snap.data ?? []).take(3).toList();
-        if (items.isEmpty) return const SizedBox.shrink();
+        final items = snap.data ?? [];
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SectionHeader(
-              title: 'Needs review',
-              subtitle: 'Captured items waiting for a decision',
-              actionLabel: 'View inbox →',
-              onAction: () =>
-                  ref.read(shellTabProvider.notifier).switchTo(1),
-            ),
-            const SizedBox(height: 12),
-            ...items.map(
-              (item) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: _ReviewItemCard(item: item),
+        if (items.isEmpty) {
+          return Row(
+            children: [
+              const Icon(Icons.check_circle_outline_rounded,
+                  size: 16, color: kSuccess),
+              const SizedBox(width: 8),
+              Text(
+                'All clear — no items need review',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: kTextSecondary,
+                ),
               ),
-            ),
-          ],
+            ],
+          );
+        }
+
+        final types = items.map((i) => i.type).toSet();
+
+        return Container(
+          decoration: BoxDecoration(
+            color: kCard,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFEDE9FE), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF7C3AED).withAlpha(18),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEDE9FE),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.inbox_rounded,
+                        size: 16, color: Color(0xFF7C3AED)),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Needs your attention',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: kTextPrimary,
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEDE9FE),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'Needs decision',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF7C3AED),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '${items.length} item${items.length == 1 ? '' : 's'} from your captures',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: kTextSecondary,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 6,
+                children: [
+                  if (types.contains(ItemType.action))
+                    const _TypePill(
+                        label: 'Task',
+                        color: kPrimary,
+                        icon: Icons.check_rounded),
+                  if (types.contains(ItemType.idea))
+                    const _TypePill(
+                        label: 'Idea',
+                        color: Color(0xFF8B5CF6),
+                        icon: Icons.lightbulb_outline_rounded),
+                ],
+              ),
+              const SizedBox(height: 14),
+              GestureDetector(
+                onTap: () =>
+                    ref.read(shellTabProvider.notifier).switchTo(1),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF7C3AED),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Review now',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(Icons.arrow_forward_rounded,
+                          size: 15, color: Colors.white),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -586,132 +649,149 @@ class _NeedsReviewSection extends ConsumerWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Review item card
+// Today compact section  (calendar preview — lightweight)
 // ---------------------------------------------------------------------------
 
-class _ReviewItemCard extends StatelessWidget {
-  final ItemRow item;
+class _TodayCompactSection extends ConsumerWidget {
+  final InboxRepository repo;
 
-  const _ReviewItemCard({required this.item});
+  const _TodayCompactSection({required this.repo});
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: kCardDecoration(radius: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  Widget build(BuildContext context, WidgetRef ref) {
+    return StreamBuilder<List<ItemRow>>(
+      stream: repo.watchInbox(InboxFilter.today),
+      builder: (ctx, snap) {
+        final items = (snap.data ?? [])
+            .where((item) => !item.needsReview)
+            .take(4)
+            .toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
+                const Icon(Icons.calendar_today_rounded,
+                    size: 14, color: kTextSecondary),
+                const SizedBox(width: 7),
                 Text(
-                  item.title,
+                  'Today',
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
                     color: kTextPrimary,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 6),
-                const Wrap(
-                  spacing: 6,
-                  children: [
-                    _TypePill(
-                      label: 'Voice note',
-                      color: kTextSecondary,
-                      icon: Icons.mic_none_rounded,
+                const Spacer(),
+                GestureDetector(
+                  onTap: () =>
+                      ref.read(shellTabProvider.notifier).switchTo(2),
+                  child: Text(
+                    items.isEmpty ? 'View schedule →' : 'View full schedule →',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: kPrimary,
                     ),
-                    _TypePill(
-                      label: 'Review',
-                      color: Color(0xFFF59E0B),
-                      icon: Icons.flag_outlined,
-                    ),
-                  ],
+                  ),
                 ),
               ],
             ),
-          ),
-        ],
-      ),
+            const SizedBox(height: 10),
+            if (items.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(left: 21),
+                child: Text(
+                  'No tasks scheduled',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: kTextSecondary,
+                  ),
+                ),
+              )
+            else
+              Container(
+                decoration: kCardDecoration(radius: 16),
+                child: Column(
+                  children: items.asMap().entries.map((entry) {
+                    final i = entry.key;
+                    final item = entry.value;
+                    return Column(
+                      children: [
+                        _TodayCompactRow(item: item),
+                        if (i < items.length - 1)
+                          const Divider(
+                              height: 1, indent: 48, color: kDivider),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
 
-// ---------------------------------------------------------------------------
-// Today preview card
-// ---------------------------------------------------------------------------
-
-class TodayPreviewCard extends StatelessWidget {
+class _TodayCompactRow extends StatelessWidget {
   final ItemRow item;
 
-  const TodayPreviewCard({super.key, required this.item});
+  const _TodayCompactRow({required this.item});
 
   String _formatTime(DateTime dt) {
-    final rawHour = dt.hour;
-    final h = rawHour == 0
-        ? 12
-        : rawHour > 12
-            ? rawHour - 12
-            : rawHour;
+    final h = dt.hour.toString().padLeft(2, '0');
     final m = dt.minute.toString().padLeft(2, '0');
-    final period = rawHour < 12 ? 'AM' : 'PM';
-    return '$h:$m $period';
+    return '$h:$m';
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: kCardDecoration(radius: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       child: Row(
         children: [
+          SizedBox(
+            width: 34,
+            child: Text(
+              item.scheduledAt != null ? _formatTime(item.scheduledAt!) : '—',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: kPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
           Container(
-            width: 8,
-            height: 8,
+            width: 4,
+            height: 4,
             decoration: const BoxDecoration(
               color: kPrimary,
               shape: BoxShape.circle,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.title,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: kTextPrimary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (item.scheduledAt != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    _formatTime(item.scheduledAt!),
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: kTextSecondary,
-                    ),
-                  ),
-                ],
-              ],
+            child: Text(
+              item.title,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: kTextPrimary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          const SizedBox(width: 10),
-          _TypePill(label: item.type == ItemType.idea ? 'Idea' : 'Task'),
         ],
       ),
     );
   }
 }
+
 
 // ---------------------------------------------------------------------------
 // Shared small widgets
@@ -754,36 +834,3 @@ class _TypePill extends StatelessWidget {
   }
 }
 
-Widget _emptyStateCard(String title, String subtitle) {
-  return Container(
-    width: double.infinity,
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-    decoration: BoxDecoration(
-      color: kBackground,
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: kDivider),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: kTextPrimary,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          subtitle,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: kTextSecondary,
-          ),
-        ),
-      ],
-    ),
-  );
-}
