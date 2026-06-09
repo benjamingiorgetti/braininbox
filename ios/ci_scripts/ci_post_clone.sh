@@ -43,8 +43,7 @@ fi
 echo "Package.swift present: $(ls ${PLUGIN_PKG}/Package.swift)"
 echo ".packages dir: $(ls ${EPHEMERAL}/.packages 2>/dev/null | wc -l) entries"
 
-echo "--- pod install ---"
-cd "${REPO}/ios"
-pod install
+# Note: pod install is handled automatically by Xcode Cloud after this script.
+# Running it here causes conflicts when Podfile.lock is out of sync with pubspec.lock.
 
 echo "=== Setup complete ==="
