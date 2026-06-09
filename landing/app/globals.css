@@ -1,0 +1,36 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800;6..12,900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@import "tailwindcss";
+
+:root {
+  --primary-300: #8DC7FF;
+  --primary-500: #4286E6;
+  --primary-600: #3578E3;
+  --primary-700: #2B64D3;
+  --primary-900: #121E49;
+  --mascot-pink: #EFBEF7;
+  --mascot-purple: #D595EE;
+  --bg: #F7F9FC;
+  --surface: #FFFFFF;
+  --border: #EEF2F7;
+  --text-main: #121E49;
+  --text-secondary: #64748B;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text-main);
+  overflow-x: hidden;
+}
+
+.font-display {
+  font-family: 'Nunito Sans', sans-serif;
+}
