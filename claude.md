@@ -172,4 +172,21 @@ No dashboards needed in v0.1 — local log that can be exported.
 
 ## 12. Current phase
 
-**v0.1 — validation build.** Build only what's needed to run a 7–14 day habit test with 5–10 target users (founders/operators/students/freelancers/sales). Anything not on the v0.1 list in `docs/roadmap.md` is out. When in doubt, it's out.
+**v0.2 — Go-to-market build.** v0.1 (validation build) is done.
+
+- **Goal:** ship 1.0 to the App Store and acquire paying US users through short-form video (TikTok/IG) using the "one input → instant visual AI result → hard paywall" format.
+- **Business target:** $1k MRR.
+- **Constraints:** solo founder, ~1h/day, $500 total budget, by EOY 2026.
+- **IN:** RevenueCat subscriptions (annual $29.99 highlighted + weekly $4.99, 3-day trial), onboarding, Google Calendar, local notifications, a thin backend proxy for OpenAI, a shareable "result card" screen, Terms of Use page.
+- **OUT:** auth/accounts, sync, teams, AI chat, meeting summaries, push notifications, a third item type, web app.
+
+The ordered step list lives in `docs/roadmap.md`. Anything not on it is out. When in doubt, it's out.
+
+> Sections 2, 5, 8 and 9 still describe v0.1 rules ("no backend", "no push", etc.). Where they conflict with this section or §13, this section and §13 win.
+
+---
+
+## 13. Monetization & security rules
+
+- **Monetization:** recording + seeing the result is always free. Saving to Inbox / scheduling is gated: 3 free captures, then trial → paywall.
+- **Security:** the OpenAI API key must never ship in the app binary. All OpenAI calls go through a proxy that holds the key server-side.

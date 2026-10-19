@@ -1,6 +1,6 @@
 # Roadmap & Edge Cases
 
-## v0.1 — Validation build (current phase)
+## v0.1 — Validation build ✅ done
 
 **Goal:** ship a thin but *real* app good enough to run a 7–14 day habit test with 5–10 target users (founders / operators / advanced students / freelancers / sales).
 
@@ -18,14 +18,16 @@
 
 ---
 
-## v0.2 — If the habit signal is positive
+## v0.2 — Go-to-market build (current phase)
 
-Decide each of these *with data from v0.1*, not by default:
-- Re-expand item types toward the original 5 **only if** review data shows users actually re-classify `action`s and want the distinction.
-- Reminders / local notifications (does a nudge lift return rate?).
-- Better date parsing + a calendar-style view.
-- Capture Detail screen (transcript + items + audio playback).
-- **First integration** (likely Calendar export) — but only if v0.1 shows items "die" in the inbox and need to land where work happens. The "second inbox / graveyard" risk is the thing this would address.
+**Goal:** ship 1.0 to the App Store and acquire paying US users through short-form video (TikTok/IG) — "one input → instant visual AI result → hard paywall". Target $1k MRR; solo, ~1h/day, $500 budget, EOY 2026. Scope and rules: `CLAUDE.md` §12–13.
+
+Ordered steps:
+1. **OpenAI proxy + CI secrets** — Cloudflare Worker holds the OpenAI key; Xcode Cloud injects dart-defines.
+2. **Result card + share image** — shareable visual of the extracted result.
+3. **Hard paywall + free-capture counter + Terms** — 3 free saves, then 3-day trial → paywall; Terms of Use page.
+4. **TestFlight** — 10 users for 7 days.
+5. **Creatives** — short-form videos for TikTok/IG.
 
 ---
 

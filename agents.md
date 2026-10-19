@@ -33,8 +33,11 @@ If a requirement is ambiguous or seems to conflict with scope → **stop and ask
 - **Never mock the `AiService`.** The AI is the reward under test; use real OpenAI from day 1.
 - **Never add an item type beyond `action` and `idea`.**
 - **Never turn Review into a per-item form.** Default-accept, edit-by-exception, one Save button.
-- **Never add** (all explicitly out for v0.1): auth, accounts, backend, sync, onboarding flows, calendar/Notion/Gmail/Slack/WhatsApp integrations, collaboration/teams/workspaces, complex tags/folders, AI chat, gamification/streaks, payments/subscriptions, web app, long-form/meeting summaries, push notifications.
-- **Never hardcode** API keys or model strings in business logic — config only.
+- **Never add** (explicitly out for v0.2): auth/accounts, sync, collaboration/teams/workspaces, AI chat, long-form/meeting summaries, push notifications, web app, Notion/Gmail/Slack/WhatsApp integrations, complex tags/folders, gamification/streaks.
+- **In scope for v0.2** (don't treat these as violations): RevenueCat subscriptions, onboarding, Google Calendar, local notifications, the thin OpenAI proxy (`proxy/`), the result-card share screen, the Terms of Use page.
+- **Never gate the result.** Recording + seeing the extracted result is always free; only saving to Inbox / scheduling is gated (see `CLAUDE.md` §13).
+- **Never ship the OpenAI API key in the app binary.** All OpenAI calls go through the proxy, which holds the key server-side.
+- **Never hardcode** secrets, API keys or model strings in business logic — config only.
 - **Never add a dependency** without recording it (with justification) in `plan.md` first.
 - **Never** silently swallow errors or auto-save items the user hasn't seen.
 
