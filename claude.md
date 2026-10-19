@@ -112,13 +112,14 @@ plus `Error` reachable from Transcribing/Extracting (with retry, keeping audio +
 
 ---
 
-## 8. Trigger (decided: in scope for v0.1)
+## 8. Trigger
 
-A daily capture habit needs a trigger; a pure-pull app tests habit on hard mode. v0.1 includes:
-- **Home-screen widget** (one tap → opens straight into Recording), and
-- **Share-sheet target** ("share to Brain Inbox" for text/voice).
+A daily capture habit needs a trigger; a pure-pull app tests habit on hard mode. The build includes:
+- **Share-sheet target** ("share to Brain Inbox" for text/voice) — the only external trigger.
 
-**No push notifications** in v0.1 (out of scope, revisit in v0.2).
+The **home-screen widget** was removed (`home_widget` is no longer in `pubspec.yaml`) and is deferred to a later phase. Do not re-add it without a plan.
+
+**No push notifications** (out of scope, see §12).
 
 ---
 
@@ -182,7 +183,7 @@ No dashboards needed in v0.1 — local log that can be exported.
 
 The ordered step list lives in `docs/roadmap.md`. Anything not on it is out. When in doubt, it's out.
 
-> Sections 2, 5, 8 and 9 still describe v0.1 rules ("no backend", "no push", etc.). Where they conflict with this section or §13, this section and §13 win.
+> Sections 2, 5 and 9 still describe v0.1 rules ("no backend", etc.). Where they conflict with this section or §13, this section and §13 win.
 
 ---
 
