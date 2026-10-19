@@ -36,3 +36,9 @@ Runner/GeneratedPluginRegistrant.*
 !Flutter/ephemeral/
 !Flutter/ephemeral/Packages/
 !Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/
+
+# Local Flutter tooling inside the tracked ephemeral folder
+Flutter/ephemeral/flutter_lldb_helper.py
+Flutter/ephemeral/flutter_lldbinit
+Flutter/ephemeral/flutter_native_integration.env
+Flutter/ephemeral/Packages/.packages/
