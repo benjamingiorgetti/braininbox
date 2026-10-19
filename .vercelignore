@@ -1,0 +1,17 @@
+/.dart_tool
+/.git
+/.idea
+/.vercel
+/android
+/assets
+/build
+/docs
+/ios
+/lib
+/test
+
+landing/.env.local
+landing/.next
+landing/node_modules
+landing/out
+landing/tsconfig.tsbuildinfo
